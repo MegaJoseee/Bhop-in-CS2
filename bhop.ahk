@@ -1,48 +1,76 @@
-﻿#Requires AutoHotkey v2.0
+﻿SetWorkingDir %A_ScriptDir%
 
-;
-FileInstall "bhop_on.mp3", A_Temp "\bhop_on.mp3", 1
-FileInstall "bhop_off.mp3", A_Temp "\bhop_off.mp3", 1
+; --- Встраиваем mp3 файлы ---
+FileInstall, bhop_on.mp3, %A_Temp%\bhop_on.mp3, 1
+FileInstall, bhop_off.mp3, %A_Temp%\bhop_off.mp3, 1
 
 ; --- Запуск CS2 через Steam ---
-Run "steam://rungameid/730"
+Run, steam://rungameid/730
 
-; --- Глобальная переменная ---
+; --- Ждем, пока CS2 реально запустится ---
+Loop {
+    Process, Exist, cs2.exe
+    if (ErrorLevel)  ; процесс найден
+        break
+    Sleep, 1000
+}
+
+; --- Запуск таймера проверки процесса каждые 2 секунды ---
+SetTimer, CheckGame, 2000
+
+CheckGame:
+Process, Exist, cs2.exe
+if (!ErrorLevel)  ; процесс не найден — закрываем скрипт
+{
+    ExitApp
+}
+return
+
+; --- Глобальная переменная для bhop ---
 global bhop_enabled := false
 
 ; --- F1 включает/выключает bhop ---
 F1::
 {
+    global bhop_enabled
     bhop_enabled := !bhop_enabled
-    if bhop_enabled
-    {
-        SoundPlay A_Temp "\bhop_on.mp3"
-        Send "{F7}"
-    }
-    else
-    {
-        SoundPlay A_Temp "\bhop_off.mp3"
-        Send "{F8}"
+    if (bhop_enabled) {
+        SoundPlay, %A_Temp%\bhop_on.mp3
+        Send, {F7}
+    } else {
+        SoundPlay, %A_Temp%\bhop_off.mp3
+        Send, {F8}
     }
 }
+return
 
-; --- Прокачка пробела ---
+; --- Space для прыжка ---
 *Space::
 {
-    if !bhop_enabled
-    {
-        Send "{Space down}"
-        KeyWait "Space"
-        Send "{Space up}"
+    global bhop_enabled
+
+    if (!bhop_enabled) {
+        Send, {Space down}
+        KeyWait, Space
+        Send, {Space up}
+        return
     }
-    else
-    {
-        Send "{F5}" ; fps max 64
-        while GetKeyState("Space", "P")
-        {
-            Send "{Space}"
-            Sleep 20
+
+    Send, {F5} ; fps max 64
+    Loop {
+        ;
+        if (!bhop_enabled) {
+            Send, {Space up}
+            break
         }
-        Send "{F6}" ; fps max 0
+
+        GetKeyState, state, Space, P
+        if (state = "U")
+            break
+
+        Send, {Space}
+        Sleep, 20
     }
+    Send, {F6} ; fps max 0
 }
+return
