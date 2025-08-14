@@ -1,6 +1,6 @@
 ﻿#Requires AutoHotkey v2.0
 
-; --- Встраиваем mp3 файлы ---
+;
 FileInstall "bhop_on.mp3", A_Temp "\bhop_on.mp3", 1
 FileInstall "bhop_off.mp3", A_Temp "\bhop_off.mp3", 1
 
